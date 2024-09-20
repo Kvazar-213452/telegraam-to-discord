@@ -1,0 +1,2 @@
+cd discord
+npm start
