@@ -1,4 +1,2 @@
-/telegram/node_modules/
-/telegram/conf.m
-/discord/node_modules/
-/discord/conf.m
+/src/node_modules/
+/src/conf.m

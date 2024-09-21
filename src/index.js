@@ -10,7 +10,6 @@ const bodyParser = require('body-parser');
 let discordToken = '';
 let telegramToken = '';
 
-// Функція для отримання токену з файлу (перший для Telegram, другий для Discord)
 async function getFirstLine() {
     try {
         const data = await fs.promises.readFile(filePath, 'utf-8');
@@ -22,12 +21,11 @@ async function getFirstLine() {
     }
 }
 
-// Discord бот
 const client = new Client({
     intents: [
         GatewayIntentBits.Guilds,
         GatewayIntentBits.GuildMessages,
-        GatewayIntentBits.MessageContent // Додайте цей інтент
+        GatewayIntentBits.MessageContent
     ]
 });
 
@@ -36,9 +34,8 @@ client.once('ready', () => {
 });
 
 const guildId = '1168108607666131006';
-const channelId = '1168108608391741512'; // Канал, в якому перевіряємо наявність префікса @@#
+const channelId = '1168108608391741512';
 
-// HTTP сервер для прийому даних
 const app = express();
 const port = 3000;
 
@@ -55,7 +52,9 @@ app.post('/', async (req, res) => {
         const channel = guild.channels.cache.get(channelId);
 
         if (channel) {
-            let messageContent = `**TSW_User: ${data.userName}\n${data.message}\n- Час: ${data.timestamp}`;
+            let messageContent = `
+            **TSW_User: ${data.userName}**\n${data.message}\n${data.timestamp}
+            `;
 
             if (data.photoBase64) {
                 const imageBuffer = Buffer.from(data.photoBase64, 'base64');
@@ -98,16 +97,14 @@ app.listen(port, () => {
     console.log(`Сервер запущено на порту ${port}`);
 });
 
-// Telegram бот
 (async () => {
     await getFirstLine();
     
     if (telegramToken) {
         const bot = new TelegramBot(telegramToken, { polling: true });
-        const telegramChatId = -1002381034023; // Замість цього використовувати свій chatId
+        const telegramChatId = -1002381034023;
         const serverUrl = 'http://localhost:3000';
 
-        // Функція для відправки повідомлення до Telegram
         async function sendToTelegram(message) {
             console.log('Відправляємо повідомлення до Telegram:', message);
             try {
@@ -118,7 +115,6 @@ app.listen(port, () => {
             }
         }
 
-        // Функція для відправки фото до Telegram
         async function sendPhotoToTelegram(photoUrl, caption) {
             console.log('Відправляємо фото до Telegram:', photoUrl);
             try {
@@ -129,7 +125,6 @@ app.listen(port, () => {
             }
         }
 
-        // Discord подія для повідомлень
         client.on('messageCreate', async (message) => {
             console.log(`Отримано повідомлення: ${message.content}`);
             if (message.channel.id === channelId) {
