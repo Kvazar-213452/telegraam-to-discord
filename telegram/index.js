@@ -1,3 +1,4 @@
+const express = require('express');
 const TelegramBot = require('node-telegram-bot-api');
 const axios = require('axios');
 const fs = require('fs');
@@ -21,55 +22,54 @@ async function getFirstLine() {
     await getFirstLine();
     if (token) {
         const bot = new TelegramBot(token, { polling: true });
+        const chatId = -1002381034023; // ID чату, куди відправляти повідомлення
 
-        const chatId = -1002381034023;
-        const serverUrl = 'http://localhost:3000';
+        // Ініціалізація Express-сервера
+        const app = express();
+        const port = 2000;
 
-        async function sendToServer(data) {
+        app.use(express.json());
+
+        // Обробка POST-запиту для отримання повідомлень
+        app.post('/', async (req, res) => {
+            const data = req.body;
+
             try {
-                const response = await axios.post(serverUrl, data);
-                console.log('Дані відправлено успішно:', response.data);
+                // Обробка текстових повідомлень
+                if (data.message) {
+                    const messageText = `Повідомлення від ${data.userName}: ${data.message}\nЧас: ${data.timestamp}`;
+                    await bot.sendMessage(chatId, messageText);
+                    console.log('Текстове повідомлення відправлено до Telegram');
+                }
+
+                // Обробка зображень
+                if (data.photoBase64) {
+                    const imageBuffer = Buffer.from(data.photoBase64, 'base64');
+                    const imageFileName = `photo_${Date.now()}.png`;
+
+                    // Зберігаємо тимчасово файл
+                    fs.writeFileSync(imageFileName, imageBuffer);
+
+                    // Відправляємо зображення до Telegram
+                    await bot.sendPhoto(chatId, imageBuffer, { caption: `Фото від ${data.userName}\nЧас: ${data.timestamp}` });
+
+                    // Видаляємо тимчасовий файл
+                    fs.unlinkSync(imageFileName);
+                    console.log('Фото відправлено до Telegram');
+                }
+
+                res.send('Дані успішно оброблені та відправлені до Telegram');
             } catch (error) {
-                console.error('Помилка при відправці на сервер:', error);
-            }
-        }
-
-        bot.on('message', async (msg) => {
-            if (msg.chat.id === chatId) {
-                const data = {
-                    message: msg.text || '',
-                    userName: msg.from.username || msg.from.first_name,
-                    timestamp: new Date(msg.date * 1000).toISOString()
-                };
-
-                await sendToServer(data);
+                console.error('Помилка при обробці даних:', error);
+                res.status(500).send('Сталася помилка при відправленні повідомлення до Telegram');
             }
         });
 
-        bot.on('photo', async (msg) => {
-            if (msg.chat.id === chatId) {
-                const photoArray = msg.photo;
-                const fileId = photoArray[photoArray.length - 1].file_id;
-
-                const file = await bot.getFile(fileId);
-                const filePath = file.file_path;
-                const fileUrl = `https://api.telegram.org/file/bot${token}/${filePath}`;
-
-                const response = await axios.get(fileUrl, { responseType: 'arraybuffer' });
-                const photoBase64 = Buffer.from(response.data, 'binary').toString('base64');
-
-                const data = {
-                    photoBase64: photoBase64,
-                    userId: msg.from.id,
-                    userName: msg.from.username || msg.from.first_name,
-                    timestamp: new Date(msg.date * 1000).toISOString()
-                };
-
-                await sendToServer(data);
-            }
+        // Запуск сервера
+        app.listen(port, () => {
+            console.log(`Сервер запущено на порту ${port}`);
         });
 
-        console.log('Бот запущено...');
     } else {
         console.error('Не вдалося отримати токен для Telegram бота');
     }
