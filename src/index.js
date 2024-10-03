@@ -37,7 +37,7 @@ const guildId = '1168108607666131006';
 const channelId = '1168108608391741512';
 
 const app = express();
-const port = 3000;
+const port = 20057;
 
 app.use(bodyParser.json({ limit: '100mb' }));
 app.use(bodyParser.urlencoded({ limit: '100mb', extended: true }));
@@ -93,8 +93,8 @@ app.post('/', async (req, res) => {
     }
 });
 
-app.listen(port, () => {
-    console.log(`Сервер запущено на порту ${port}`);
+app.listen(port, '0.0.0.0', () => {
+    console.log(`Сервер запущено на порту ${port} і доступний з усіх IP-адрес`);
 });
 
 (async () => {
